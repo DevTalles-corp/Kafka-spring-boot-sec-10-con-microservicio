@@ -4,9 +4,12 @@ import com.bistro.notifications.shared.NonRetryableException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.common.TopicPartition;
+import org.springframework.boot.kafka.autoconfigure.ConcurrentKafkaListenerContainerFactoryConfigurer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.config.TopicBuilder;
+import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.listener.DeadLetterPublishingRecoverer;
 import org.springframework.kafka.listener.DefaultErrorHandler;
@@ -36,6 +39,27 @@ public class KafkaErrorHandlingConfig {
         errorHandler.addNotRetryableExceptions(NonRetryableException.class);
 
         return errorHandler;
+    }
+
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<Object, Object> dltReprocessorFactory(
+            ConcurrentKafkaListenerContainerFactoryConfigurer configurer,
+            ConsumerFactory<Object, Object> consumerFactory) {
+
+        ConcurrentKafkaListenerContainerFactory<Object, Object> factory =
+                new ConcurrentKafkaListenerContainerFactory<>();
+
+        configurer.configure(factory, consumerFactory);
+
+        // Sin reintentos y sin DLT: si el reprocesador no puede leer un mensaje, lo saltea
+        factory.setCommonErrorHandler(
+                new DefaultErrorHandler(
+                (record, exception) -> log.warn(
+                        "Salteado por el reprocesador (ilegible): topic={}, key={}, causa={}",
+                        record.topic(), record.key(), exception.getMessage()),
+                new FixedBackOff(0L, 0L)));
+
+        return factory;
     }
 
     @Bean
