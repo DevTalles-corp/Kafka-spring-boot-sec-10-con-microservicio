@@ -1,11 +1,18 @@
 spring:
   application:
     name: bistro
+
   modulith:
     events:
       republish-outstanding-events-on-restart: true
       kafka:
         enable-json: false
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/bistro}
 
   profiles:
     active: dev

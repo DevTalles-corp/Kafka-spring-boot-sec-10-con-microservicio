@@ -2,7 +2,6 @@ package com.bistro.reservations.service;
 
 import com.bistro.tables.events.TableAssigned;
 import lombok.RequiredArgsConstructor;
-import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;
 
