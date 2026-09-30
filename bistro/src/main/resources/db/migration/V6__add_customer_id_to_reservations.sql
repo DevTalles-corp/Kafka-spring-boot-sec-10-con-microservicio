@@ -1,0 +1,1 @@
+ALTER TABLE reservations ADD COLUMN customer_id VARCHAR(64);

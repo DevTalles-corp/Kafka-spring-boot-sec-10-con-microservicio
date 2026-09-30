@@ -21,6 +21,9 @@ public class Reservation {
     @Column(name = "reservation_code", nullable = false, unique = true)
     private String reservationCode;
 
+    @Column(name = "customer_id")
+    private String customerId;
+
     @Column(name = "customer_name", nullable = false)
     private String customerName;
 

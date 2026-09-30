@@ -1,5 +1,6 @@
 package com.bistro.shared.exception;
 
+import com.bistro.reservations.ReservationAccessDeniedException;
 import com.bistro.reservations.ReservationNotFoundException;
 import org.springframework.http.*;
 import org.springframework.validation.FieldError;
@@ -38,6 +39,19 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         ProblemDetail problem = ProblemDetailConfig.notFoundProblem(ex.getMessage());
         problem.setInstance(URI.create(request.getDescription(false).replace("uri=", "")));
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .body(problem);
+    }
+
+    @ExceptionHandler(ReservationAccessDeniedException.class)
+    public ResponseEntity<ProblemDetail> handleReservationAccessDenied(ReservationAccessDeniedException ex, WebRequest request)
+    {
+        ProblemDetail problem = ProblemDetailConfig.genericProblem(
+                403, "Acceso denegado", ex.getMessage());
+
+        problem.setInstance(URI.create(request.getDescription(false).replace("uri=", "")));
+
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .contentType(MediaType.APPLICATION_PROBLEM_JSON)
                 .body(problem);
     }

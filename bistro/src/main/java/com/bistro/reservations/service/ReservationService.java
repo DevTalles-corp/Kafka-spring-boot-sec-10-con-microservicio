@@ -1,5 +1,6 @@
 package com.bistro.reservations.service;
 
+import com.bistro.reservations.ReservationAccessDeniedException;
 import com.bistro.reservations.ReservationNotFoundException;
 import com.bistro.reservations.controller.ReservationMapper;
 import com.bistro.reservations.controller.ReservationRequest;
@@ -104,10 +105,13 @@ public class ReservationService {
     }
 
     @Transactional
-    public ReservationResponse createReservation(ReservationRequest request) {
+    public ReservationResponse createReservation(ReservationRequest request, CustomerIdentity customer) {
         Reservation reservation = reservationMapper.toEntity(request);
         reservation.setReservationCode(generateUniqueReservationCode());
         reservation.setStatus(ReservationStatus.PENDING);
+        reservation.setCustomerId(customer.id());
+        reservation.setCustomerName(customer.name());
+        reservation.setCustomerEmail(customer.email());
 
         Reservation saved = reservationRepository.save(reservation);
 
@@ -127,9 +131,10 @@ public class ReservationService {
     }
 
     @Transactional(readOnly = true)
-    public ReservationStatusResponse getReservationStatus(String reservationCode) {
-        Reservation reservation = reservationRepository.findByReservationCode(reservationCode)
-                .orElseThrow(() -> new ReservationNotFoundException(reservationCode));
+    public ReservationStatusResponse getReservationStatus(String reservationCode, String customerId) {
+
+        Reservation reservation = findOwnedReservation(reservationCode, customerId);
+
         return reservationMapper.toStatusResponse(reservation);
     }
 
@@ -144,13 +149,9 @@ public class ReservationService {
     }
 
     @Transactional
-    public void cancel(String reservationCode){
+    public void cancel(String reservationCode, String customerId){
 
-        Reservation reservation = reservationRepository.findByReservationCode(reservationCode)
-                .orElseThrow(
-                        () -> new IllegalArgumentException(
-                                "Reserva no encontrada: " + reservationCode
-                        ));
+        Reservation reservation = findOwnedReservation(reservationCode, customerId);
 
         ReservationStatus previousStatus = reservation.getStatus();
 
@@ -178,6 +179,18 @@ public class ReservationService {
                 ReservationStatus.CANCELLED,
                 LocalDateTime.now()));
 
+    }
+
+    private Reservation findOwnedReservation(String reservationCode, String customerId){
+
+        Reservation reservation = reservationRepository.findByReservationCode(reservationCode)
+                .orElseThrow(() -> new ReservationNotFoundException(reservationCode));
+
+        if(!customerId.equals(reservation.getCustomerId())){
+            throw new ReservationAccessDeniedException(reservationCode);
+        }
+
+        return reservation;
     }
 }
 

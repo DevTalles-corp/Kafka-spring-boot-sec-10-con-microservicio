@@ -1,9 +1,12 @@
 package com.bistro.reservations.controller;
 
+import com.bistro.reservations.service.CustomerIdentity;
 import com.bistro.reservations.service.ReservationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -15,21 +18,32 @@ public class ReservationController {
 
     @PostMapping
     public ResponseEntity<ReservationResponse> createReservation(
-            @Valid @RequestBody ReservationRequest request) {
-        ReservationResponse response = reservationService.createReservation(request);
+            @Valid @RequestBody ReservationRequest request, @AuthenticationPrincipal Jwt jwt) {
+        CustomerIdentity customer = new CustomerIdentity(
+                jwt.getSubject(),
+                jwt.getClaimAsString("name"),
+                jwt.getClaimAsString("email"));
+
+
+        ReservationResponse response = reservationService.createReservation(request, customer);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{reservationCode}")
     public ResponseEntity<ReservationStatusResponse> getReservationStatus(
-            @PathVariable String reservationCode) {
-        ReservationStatusResponse response = reservationService.getReservationStatus(reservationCode);
+            @PathVariable String reservationCode,
+            @AuthenticationPrincipal Jwt jwt) {
+
+        ReservationStatusResponse response = reservationService.getReservationStatus(reservationCode, jwt.getSubject());
         return ResponseEntity.ok(response);
     }
 
     @PostMapping("/{reservationCode}/cancel")
-    public ResponseEntity<Void> cancelReservation(@PathVariable String reservationCode){
-        reservationService.cancel(reservationCode);
+    public ResponseEntity<Void> cancelReservation(
+            @PathVariable String reservationCode,
+            @AuthenticationPrincipal Jwt jwt) {
+
+        reservationService.cancel(reservationCode, jwt.getSubject());
         return ResponseEntity.noContent().build();
     }
 
