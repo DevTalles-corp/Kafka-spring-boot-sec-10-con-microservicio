@@ -28,13 +28,12 @@ class ReservationServiceTest {
     @Test
     void shouldCreateReservationInPendingState() {
         ReservationRequest request = ReservationRequest.builder()
-                .customerName("Ana García")
-                .customerEmail("ana@example.com")
                 .reservationTime(LocalDateTime.of(2026, 8, 20, 19, 30))
                 .partySize(4)
                 .build();
 
-        ReservationResponse response = reservationService.createReservation(request);
+        ReservationResponse response = reservationService.createReservation(request,
+                new CustomerIdentity("ana-id", "Ana García", "ana@example.com"));
 
         assertThat(response.getReservationCode()).isNotBlank();
         assertThat(response.getStatus()).isEqualTo(ReservationStatus.PENDING);
@@ -44,13 +43,12 @@ class ReservationServiceTest {
     @Test
     void shouldPersistTerminalStatus() {
         ReservationRequest request = ReservationRequest.builder()
-                .customerName("María Pérez")
-                .customerEmail("maria@example.com")
                 .reservationTime(LocalDateTime.of(2026, 8, 20, 21, 0))
                 .partySize(2)
                 .build();
 
-        ReservationResponse response = reservationService.createReservation(request);
+        ReservationResponse response = reservationService.createReservation(request,
+                new CustomerIdentity("maria-id", "María Pérez", "maria@example.com"));
 
         long count = reservationRepository.count();
         assertThat(count).isEqualTo(1);

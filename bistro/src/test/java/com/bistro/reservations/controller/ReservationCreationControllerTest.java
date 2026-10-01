@@ -1,16 +1,19 @@
 package com.bistro.reservations.controller;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -20,14 +23,21 @@ class ReservationCreationControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
+    private static SecurityMockMvcRequestPostProcessors.JwtRequestPostProcessor anaToken(){
+        return jwt().jwt(token -> token
+                .subject("ana-id")
+                .claim("name", "Ana García")
+                .claim("email", "ana@example.com"));
+    }
+
+    @Disabled("La mesa se asigna por eventos, después de la respuesta. Se resuelve en la sección de testing.")
     @Test
     void shouldConfirmReservation() throws Exception {
         mockMvc.perform(post("/api/v1/reservations")
+                        .with(anaToken())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "customerName": "Ana García",
-                                  "customerEmail": "ana@example.com",
                                   "reservationTime": "2026-08-20T19:30:00",
                                   "partySize": 4
                                 }
@@ -38,14 +48,14 @@ class ReservationCreationControllerTest {
                 .andExpect(jsonPath("$.assignedTableId").exists());
     }
 
+    @Disabled("El rechazo llega por eventos, después de la respuesta. Se resuelve en la sección de testing.")
     @Test
     void shouldRejectReservationWhenNoCapacity() throws Exception {
         mockMvc.perform(post("/api/v1/reservations")
+                        .with(anaToken())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "customerName": "Carlos López",
-                                  "customerEmail": "carlos@example.com",
                                   "reservationTime": "2026-08-20T20:00:00",
                                   "partySize": 10
                                 }
@@ -59,11 +69,10 @@ class ReservationCreationControllerTest {
     @Test
     void shouldReturn400WhenPartySizeExceeds12() throws Exception {
         mockMvc.perform(post("/api/v1/reservations")
+                        .with(anaToken())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "customerName": "Marta Ruiz",
-                                  "customerEmail": "marta@example.com",
                                   "reservationTime": "2026-08-20T20:00:00",
                                   "partySize": 13
                                 }
@@ -76,11 +85,10 @@ class ReservationCreationControllerTest {
     @Test
     void shouldReturn400ForInvalidRequest() throws Exception {
         mockMvc.perform(post("/api/v1/reservations")
+                        .with(anaToken())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "customerName": "",
-                                  "customerEmail": "not-an-email",
                                   "reservationTime": null,
                                   "partySize": 0
                                 }

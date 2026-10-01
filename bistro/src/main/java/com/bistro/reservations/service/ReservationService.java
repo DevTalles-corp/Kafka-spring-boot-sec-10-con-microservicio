@@ -131,9 +131,9 @@ public class ReservationService {
     }
 
     @Transactional(readOnly = true)
-    public ReservationStatusResponse getReservationStatus(String reservationCode, String customerId) {
+    public ReservationStatusResponse getReservationStatus(String reservationCode, Requester requester) {
 
-        Reservation reservation = findOwnedReservation(reservationCode, customerId);
+        Reservation reservation = findAccessibleReservation(reservationCode, requester);
 
         return reservationMapper.toStatusResponse(reservation);
     }
@@ -149,9 +149,9 @@ public class ReservationService {
     }
 
     @Transactional
-    public void cancel(String reservationCode, String customerId){
+    public void cancel(String reservationCode, Requester requester){
 
-        Reservation reservation = findOwnedReservation(reservationCode, customerId);
+        Reservation reservation = findAccessibleReservation(reservationCode, requester);
 
         ReservationStatus previousStatus = reservation.getStatus();
 
@@ -187,6 +187,20 @@ public class ReservationService {
                 .orElseThrow(() -> new ReservationNotFoundException(reservationCode));
 
         if(!customerId.equals(reservation.getCustomerId())){
+            throw new ReservationAccessDeniedException(reservationCode);
+        }
+
+        return reservation;
+    }
+
+    private Reservation findAccessibleReservation(String reservationCode, Requester requester){
+
+        Reservation reservation = reservationRepository.findByReservationCode(reservationCode)
+                .orElseThrow(() -> new ReservationNotFoundException(reservationCode));
+
+        boolean owner = requester.customerId().equals(reservation.getCustomerId());
+
+        if(!owner && !requester.staff()){
             throw new ReservationAccessDeniedException(reservationCode);
         }
 

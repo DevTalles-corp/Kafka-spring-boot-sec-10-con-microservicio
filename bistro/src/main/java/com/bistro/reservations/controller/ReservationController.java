@@ -1,10 +1,12 @@
 package com.bistro.reservations.controller;
 
 import com.bistro.reservations.service.CustomerIdentity;
+import com.bistro.reservations.service.Requester;
 import com.bistro.reservations.service.ReservationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
@@ -32,19 +34,31 @@ public class ReservationController {
     @GetMapping("/{reservationCode}")
     public ResponseEntity<ReservationStatusResponse> getReservationStatus(
             @PathVariable String reservationCode,
-            @AuthenticationPrincipal Jwt jwt) {
+            @AuthenticationPrincipal Jwt jwt,
+            Authentication authentication
+    ) {
 
-        ReservationStatusResponse response = reservationService.getReservationStatus(reservationCode, jwt.getSubject());
+        ReservationStatusResponse response = reservationService.getReservationStatus(reservationCode,
+                requester(jwt, authentication));
         return ResponseEntity.ok(response);
     }
 
     @PostMapping("/{reservationCode}/cancel")
     public ResponseEntity<Void> cancelReservation(
             @PathVariable String reservationCode,
-            @AuthenticationPrincipal Jwt jwt) {
+            @AuthenticationPrincipal Jwt jwt,
+            Authentication authentication
+            ) {
 
-        reservationService.cancel(reservationCode, jwt.getSubject());
+        reservationService.cancel(reservationCode, requester(jwt, authentication));
         return ResponseEntity.noContent().build();
+    }
+
+    private static Requester requester(Jwt jwt, Authentication authentication){
+        boolean staff = authentication.getAuthorities().stream()
+                .anyMatch(authority -> authority.getAuthority().equals("ROLE_STAFF"));
+
+        return new Requester(jwt.getSubject(), staff);
     }
 
 

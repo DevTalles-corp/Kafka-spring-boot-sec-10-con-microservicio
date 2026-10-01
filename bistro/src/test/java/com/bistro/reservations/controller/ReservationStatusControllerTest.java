@@ -16,6 +16,7 @@ import java.time.LocalDateTime;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -37,6 +38,7 @@ class ReservationStatusControllerTest {
     void shouldReturnStatusForExistingReservation() throws Exception {
         Reservation reservation = Reservation.builder()
                 .reservationCode("RES-TEST-1234")
+                .customerId("ana-id")
                 .customerName("Ana García")
                 .customerEmail("ana@example.com")
                 .reservationTime(LocalDateTime.of(2026, 8, 20, 19, 30))
@@ -47,7 +49,9 @@ class ReservationStatusControllerTest {
                 .build();
         reservationRepository.save(reservation);
 
-        mockMvc.perform(get("/api/v1/reservations/RES-TEST-1234"))
+        mockMvc.perform(get("/api/v1/reservations/RES-TEST-1234")
+                        .with(jwt().jwt(token -> token.subject("ana-id")))
+                )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.reservationCode").value("RES-TEST-1234"))
                 .andExpect(jsonPath("$.status").value("CONFIRMED"))
@@ -57,7 +61,9 @@ class ReservationStatusControllerTest {
 
     @Test
     void shouldReturn404ForNonExistingReservation() throws Exception {
-        mockMvc.perform(get("/api/v1/reservations/RES-NONEXISTENT"))
+        mockMvc.perform(get("/api/v1/reservations/RES-NONEXISTENT")
+                        .with(jwt())
+                )
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.title").value("Recurso no encontrado"));
     }
