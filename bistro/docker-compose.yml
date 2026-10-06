@@ -81,6 +81,13 @@ services:
       keycloak-db:
         condition: service_healthy
 
+  lgtm:
+    image: grafana/otel-lgtm:latest
+    container_name: bistro-lgtm
+    ports:
+      - "3000:3000"   # Grafana: la pantalla para mirar trazas y métricas
+      - "4318:4318"   # OTLP por HTTP: por acá las apps mandan sus datos
+
 volumes:
   keycloak-db-data:
 

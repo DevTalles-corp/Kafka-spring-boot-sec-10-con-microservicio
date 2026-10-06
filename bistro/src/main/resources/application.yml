@@ -36,6 +36,22 @@ spring:
       properties:
         enable.idempotence: true
         max.block.ms: 5000
+    template:
+      observation-enabled: true
+
+management:
+  tracing:
+    sampling:
+      probability: 1.0
+  opentelemetry:
+    tracing:
+      export:
+        otlp:
+          endpoint: http://localhost:4318/v1/traces
+  otlp:
+    metrics:
+      export:
+        url: http://localhost:4318/v1/metrics
 
 ---
 spring:
